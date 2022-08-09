@@ -1,37 +1,26 @@
-# stage build
-FROM node:16-alpine
-
-WORKDIR /app
-
-# copy everything to the container
-COPY . .
-
-# clean install all dependencies
+### Build Step
+# pull the Node.js Docker image
+FROM node:16.9 as builder
+# change working directory
+WORKDIR /usr/src/app
+# copy the package.json files from local machine to the workdir in container
+COPY package*.json ./
+# run npm install in our local machine
 RUN npm ci
-
-# remove potential security issues
-RUN npm audit fix
-    
-# build SvelteKit app
+# copy the generated modules and all other files to the container
+COPY . .
+# build the application
 RUN npm run build
-
-
-# stage run
-FROM node:16-alpine
-
+### Serve Step
+# pull the Node.js Docker image
+FROM node:16.2.0-alpine3.13
+# change working directory
 WORKDIR /app
-
-# copy dependency list
-COPY --from=0 /app/package*.json ./
-
-# clean install dependencies, no devDependencies, no prepare script
-RUN npm ci --production --ignore-scripts
-
-# remove potential security issues
-RUN npm audit fix
-
-# copy built SvelteKit app to /app
-COPY --from=0 /app/build ./
-
+# copy files from previous step
+COPY --from=builder /usr/src/app/build .
+COPY --from=builder /usr/src/app/package.json .
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+# our app is running on port 3000 within the container, so need to expose it
 EXPOSE 3000
-CMD ["node", "./index.js"]
+# the command that starts our app
+CMD ["node", "index.js"]
