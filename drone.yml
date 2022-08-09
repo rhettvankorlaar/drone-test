@@ -17,6 +17,7 @@ steps:
   commands:
   - sleep 5 ### give docker enough time to start
   - echo $DOCKER_PASSWORD | docker login ghcr.io -u $DOCKER_USER --password-stdin
+  - sleep 5 
   - docker build . -t ghcr.io/rhettvankorlaar/drone-test:latest
   - docker push ghcr.io/rhettvankorlaar/drone-test:latest
 
